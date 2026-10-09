@@ -24,7 +24,7 @@ Without `publish: "true"` the action is a dry run: it checks the record and send
 | `ledger` | `https://ledger.horizonshield.dev` | any service with the same contract |
 | `receipt` | `trace-pin-receipt.json` | where the receipt is written |
 
-Outputs: `sha`, `stage` (`dry_run`, `pinned`, or the stage that refused), `status` (`pending` or `anchored`), `url`.
+Outputs: `sha`, `stage` (`dry_run`, `pinned`, or the stage that refused), `status` (`pending` or `anchored`), `url`, `exit-code`. When the step fails (a refused record, a mismatched receipt), read the receipt file: it is always written, and it carries `refused` and `why`.
 
 ## What it does
 

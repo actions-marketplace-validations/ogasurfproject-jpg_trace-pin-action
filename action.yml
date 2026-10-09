@@ -33,9 +33,14 @@ outputs:
   url:
     description: "The ledger's page for this record (empty on a dry run)."
     value: ${{ steps.pin.outputs.url }}
+  exit-code:
+    description: "Exit code of nenrin-trace-pin: 0 done (or a pinnable dry run), 1 refused or mismatched, 2 input or network error."
+    value: ${{ steps.pin.outputs.rc }}
 runs:
   using: "composite"
   steps:
+    # The check and the pin run in one step that always exits 0, so its outputs and the receipt are kept even when
+    # the record is refused; the next step fails the action when the CLI did not succeed.
     - id: pin
       shell: bash
       env:
@@ -49,7 +54,14 @@ runs:
         if [ "$TP_PUBLISH" = "true" ]; then args+=(--yes); fi
         npx --yes -p nenrin-verify@0.5.1 nenrin-trace-pin "${args[@]}"
         rc=$?
+        echo "rc=$rc" >> "$GITHUB_OUTPUT"
         if [ -f "$TP_RECEIPT" ]; then
           node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const o=require("fs").createWriteStream(process.env.GITHUB_OUTPUT,{flags:"a"});for(const k of ["sha","stage","status","url"])o.write(k+"="+(r[k]==null?"":String(r[k]).replace(/[\r\n]/g,""))+"\n");o.end()' "$TP_RECEIPT"
         fi
-        exit $rc
+        exit 0
+    - shell: bash
+      env:
+        TP_RC: ${{ steps.pin.outputs.rc }}
+        TP_RECEIPT: ${{ inputs.receipt }}
+      run: |
+        if [ "$TP_RC" != "0" ]; then echo "::error::nenrin-trace-pin exited $TP_RC; the receipt ($TP_RECEIPT) says why"; exit 1; fi

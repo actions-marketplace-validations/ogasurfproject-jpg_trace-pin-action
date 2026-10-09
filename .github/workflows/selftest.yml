@@ -34,10 +34,9 @@ jobs:
           publish: "true"
           receipt: tampered-receipt.json
       - name: Check the refusal
+        # The receipt file is the contract on failure; step outputs are not relied on after a failed step.
         env:
           OUTCOME: ${{ steps.bad.outcome }}
-          STAGE: ${{ steps.bad.outputs.stage }}
         run: |
           test "$OUTCOME" = "failure"
-          test "$STAGE" = "local_intake"
-          node -e 'const r=require("./tampered-receipt.json");if(r.sent!==false||r.refused!=="signature_invalid")process.exit(1)'
+          node -e 'const r=require("./tampered-receipt.json");if(r.stage!=="local_intake"||r.sent!==false||r.refused!=="signature_invalid")process.exit(1)'
