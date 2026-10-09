@@ -1,0 +1,55 @@
+name: "TRACE record time anchor"
+description: "Pin a signed TRACE Trust Record to a NENRIN ledger, so it can still be checked after the 24 hour window. Dry run by default."
+author: "The HORIZONs Co., Ltd."
+branding:
+  icon: "clock"
+  color: "gray-dark"
+inputs:
+  record:
+    description: "Path to the signed TRACE Trust Record (JSON) to pin."
+    required: true
+  publish:
+    description: "Set to 'true' to pin. Anything else is a dry run: the record is checked locally and nothing is sent. Pinning makes the record public and it cannot be withdrawn."
+    required: false
+    default: "false"
+  ledger:
+    description: "Origin of the ledger to pin to. Any service with the same contract works (POST /evidence/trace {record} -> {sha, status})."
+    required: false
+    default: "https://ledger.horizonshield.dev"
+  receipt:
+    description: "Where to write the receipt JSON."
+    required: false
+    default: "trace-pin-receipt.json"
+outputs:
+  sha:
+    description: "sha256 of the RFC 8785 form of the record, computed locally and matched against the ledger's answer."
+    value: ${{ steps.pin.outputs.sha }}
+  stage:
+    description: "dry_run, pinned, or the stage that refused (local_intake, ledger, receipt)."
+    value: ${{ steps.pin.outputs.stage }}
+  status:
+    description: "pending or anchored (empty on a dry run)."
+    value: ${{ steps.pin.outputs.status }}
+  url:
+    description: "The ledger's page for this record (empty on a dry run)."
+    value: ${{ steps.pin.outputs.url }}
+runs:
+  using: "composite"
+  steps:
+    - id: pin
+      shell: bash
+      env:
+        TP_RECORD: ${{ inputs.record }}
+        TP_PUBLISH: ${{ inputs.publish }}
+        TP_LEDGER: ${{ inputs.ledger }}
+        TP_RECEIPT: ${{ inputs.receipt }}
+      run: |
+        set -uo pipefail
+        args=("$TP_RECORD" --ledger "$TP_LEDGER" --out "$TP_RECEIPT")
+        if [ "$TP_PUBLISH" = "true" ]; then args+=(--yes); fi
+        npx --yes -p nenrin-verify@0.5.1 nenrin-trace-pin "${args[@]}"
+        rc=$?
+        if [ -f "$TP_RECEIPT" ]; then
+          node -e 'const r=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8"));const o=require("fs").createWriteStream(process.env.GITHUB_OUTPUT,{flags:"a"});for(const k of ["sha","stage","status","url"])o.write(k+"="+(r[k]==null?"":String(r[k]).replace(/[\r\n]/g,""))+"\n");o.end()' "$TP_RECEIPT"
+        fi
+        exit $rc

@@ -1,0 +1,43 @@
+name: selftest
+# Runs the action from this commit in dry-run mode only: nothing is ever pinned by this workflow.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: A valid record (signed by agentrust-trace 0.11.0 with a public test key) is pinnable
+        id: ok
+        uses: ./
+        with:
+          record: examples/test-record.json
+      - name: Its sha is the one TRACE's own library computes
+        env:
+          SHA: ${{ steps.ok.outputs.sha }}
+          STAGE: ${{ steps.ok.outputs.stage }}
+        run: |
+          test "$STAGE" = "dry_run"
+          test "$SHA" = "c44de5ac69363d629a165830ed6224b375bd883cca63d81c5f9f624310e6b8ed"
+      - name: Tamper with one claim
+        run: node -e 'const f=require("fs");const r=JSON.parse(f.readFileSync("examples/test-record.json"));r.subject="spiffe://example.org/agent/someone-else";f.writeFileSync("tampered.json",JSON.stringify(r))'
+      - name: The tampered record is refused locally and nothing is sent
+        id: bad
+        continue-on-error: true
+        uses: ./
+        with:
+          record: tampered.json
+          publish: "true"
+          receipt: tampered-receipt.json
+      - name: Check the refusal
+        env:
+          OUTCOME: ${{ steps.bad.outcome }}
+          STAGE: ${{ steps.bad.outputs.stage }}
+        run: |
+          test "$OUTCOME" = "failure"
+          test "$STAGE" = "local_intake"
+          node -e 'const r=require("./tampered-receipt.json");if(r.sent!==false||r.refused!=="signature_invalid")process.exit(1)'

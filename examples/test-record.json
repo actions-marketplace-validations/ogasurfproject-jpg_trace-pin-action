@@ -1,0 +1,35 @@
+{
+  "appraisal": {
+    "status": "affirming",
+    "verifier": "https://verifier.example/appraise"
+  },
+  "build_provenance": {
+    "digest": "sha256:efefefefefefefefefefefefefefefefefefefefefefefefefefefefefefefef",
+    "slsa_level": 2
+  },
+  "cnf": {
+    "jwk": {
+      "crv": "Ed25519",
+      "kty": "OKP",
+      "x": "q3T2O3VtoP6y2UGTWeoCcN0E6VqAaeZuom0Ki9jCN30"
+    }
+  },
+  "data_class": "internal",
+  "eat_profile": "tag:agentrust-io.com,2026:trace-v0.2",
+  "iat": 1790640000,
+  "model": {
+    "model_id": "estimator-1",
+    "provider": "example"
+  },
+  "policy": {
+    "bundle_hash": "sha256:cdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+    "enforcement_mode": "enforce"
+  },
+  "runtime": {
+    "measurement": "sha256:abababababababababababababababababababababababababababababababab",
+    "platform": "intel-tdx"
+  },
+  "signature": "3QYy5_qyuSXrjLY99YsCW74vS8V1OinFJpMKN3Gbslr9VzrckpHqIDRL9C3z3P-mhJ50J1kxmYKQay8R9i1tAA",
+  "subject": "spiffe://example.org/agent/estimator",
+  "transparency": "https://registry.example/claim/trace-2026-09-29-0001"
+}

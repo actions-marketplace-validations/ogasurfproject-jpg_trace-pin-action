@@ -1,0 +1,16 @@
+# Example: export a TRACE Trust Record from your build and pin it, so an auditor can still check it next year.
+name: trace
+on:
+  workflow_dispatch:
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # ... produce trace.json with your agent tool (for example `bernstein trace export --last --out trace.json`)
+      - uses: ogasurfproject-jpg/trace-pin-action@v1
+        id: pin
+        with:
+          record: trace.json
+          publish: "true"
+      - run: echo "pinned ${{ steps.pin.outputs.sha }} (${{ steps.pin.outputs.status }})"
